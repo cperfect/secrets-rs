@@ -1,0 +1,10 @@
+{
+  "name": "secrets-rs",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/rust:1": {
+      "version": "1.95.0"
+    },
+    "ghcr.io/devcontainers-extra/features/claude-code:2": {}
+  }
+}
