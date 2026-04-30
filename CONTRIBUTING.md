@@ -22,7 +22,7 @@ A dev container configuration is provided for VS Code and compatible editors —
 
 | Component | Version | Defined in |
 |-----------|---------|------------|
-| Rust | 1.95.0 | `.devcontainer/Dockerfile` (`ARG RUST_VERSION`) |
+| Rust | 1.95.0 | Cargo.toml |
 
 ```bash
 # Build the workspace
@@ -64,3 +64,20 @@ cargo test
 - `cargo test`
 
 and fix any issues found
+
+#### Other Guidelines
+1. **Code SHOULD be safe & secure** Code should implement secure code practices, e.g. [OWASP](https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/stable-en/02-checklist/05-checklist)
+1. **Systems SHOULD be deterministic and synchronous as far as possible** Non-determistic and asynchronous behavious should be isolated and clearly named and documented
+1. **Interfaces MUST be developed Schema First** This includes both functions and models.
+1. **Code MUST include standard doc-comments for public/exported elements** based on the landguage used.
+1. **Additional inline comments SHOULD be added for clarity** e.g. for complex code, use of non-standard or inconsistent, patterns, or the intent is not clear from the name, or the code relates to a library or external service where constraints and usage are not obvious. 
+1. **Commits SHOULD conform to the Conventional Commits standard** see https://www.conventionalcommits.org/en/v1.0.0/#summary
+1. **The Git Workflow WILL BE Trunk Based**
+1. **Shell scripting SHOULD be minimised** — prefer CLI tooling, Makefiles, or application code over shell scripts. Shell scripts are hard to test, port, and maintain.
+1. **No error should just be ignored** - either it is worth noticing or it isn't an error
+### Testing
+1. **Tests MUST be automated**
+1. **Tests SHOULD be reliable** flakey tests are broken tests. Either fix what is being tested of fix the tests.
+1. **Overall Test Coverage SHOULD aim towards the Test Diamond** As opposed to the Test Pyramid. That is Integration Teating should have the most coverage (ideally tending to 100%), and UI and unit testing are less important.
+
+

@@ -1,51 +1,147 @@
-# Rust Secrets
-`secrets-rs` is a library for safely retrieve and use secrets in rust applications. The primary purpose for this is configuring applications.
+# secrets-rs
 
-Safety means that the secret itself must be explicitly asked for by the application and all default ways of accessing it produce a masked value instead (see Value vs Masked Value).
+A Rust library for safely retrieving and using secrets in applications, primarily for configuration.
 
+The core guarantee: a secret's real value must be explicitly requested. Every default access path — `Display`, `Debug`, and serde serialization — emits a **masked value** that is safe to include in logs and error reports.
 
-## Core Concepts
-### Secrets
-A secret is any data that should not be generally accessible to the rest of the application or it
-The initially supported data types will be:
-* String (UTF-8)
-* JSON
-* raw bytes (users will need to further manipulate these)
-A secret will be uniquely identified within the application by a urn of the form `urn:secret-rs:<source_id>:<name>` where the first two elements (the scheme and the NID) are case insensitive (as per the RFC8141) and the cases sensitivity of the latter two elements depend on the source type (these are the NSS, which can be sensitive per the RFC).
+## Concepts
+
+### Secret
+
+`Secret<T>` is a generic wrapper around a typed value. The supported types are:
+
+| Type | `T` |
+|------|-----|
+| UTF-8 string | `String` |
+| Raw bytes | `Vec<u8>` |
+| JSON | `serde_json::Value` |
+
+A secret is identified by a URN of the form:
+
+```
+urn:secrets-rs:<source_id>:<name>
+```
+
+The scheme (`urn`) and NID (`secrets-rs`) are case-insensitive per RFC 8141. The case sensitivity of `source_id` and `name` depends on the source.
+
+### Masked value
+
+Until a secret is bound, or whenever it is displayed by default, it shows a masked value:
+
+```
+urn:secrets-rs:env:MY_API_KEY [UNBOUND]        # before binding
+urn:secrets-rs:env:MY_API_KEY [string:22]      # after binding
+```
+
+The format is `<urn> [<type>:<size>]`. Calling `.value()` before binding returns an error.
+
 ### Sources
-Source are where secrets can be retrieved from. The initial supported source with Environment Variables. Future sources might include Cloud Services such as AWS Secrets Manager or Azure Key Vault. Sources are identified by Source Id which must be unique within the context of the application. The id could be logical or physical depending on the source type.
-### Name
-A secret is uniquely named within a source and a combination of name and source id and the combination of source id and name must be unique within the context of the application.
+
+A source is anything that can look up a secret by name and return its raw bytes. Sources are registered in a `SourceRegistry` keyed by the `source_id` from the URN.
+
+**Built-in source:**
+
+| Source | `source_id` convention | Backed by |
+|--------|----------------------|-----------|
+| `EnvSource` | any string (e.g. `"env"`) | `std::env::var` |
+
 ### Binding
-Binding is the process of retieving a secrete from a source based on the source id and name and storing in a struct from which the value can be accessed. 
-### Value vs Masked Value
-The value is the actual secret data and must be explicitly asked for. The masked value is safe to print to logs etc and what will be returned by default e.g. by to string functions, default json mappings etc. The masked value will be the secret urn followed by the type and the size or length. Attempting to retreive the value before binding is an error. The maked value of an unbound secret will include the words "UNBOUND" instead of the length/size.
 
+Binding resolves a secret from its source and stores the typed value inside the `Secret<T>` struct. You can bind secrets individually with `Secret::bind`, or bind every secret in a struct at once with `bind_all`.
 
-## Implementation
-A struct Secret will be implemented with generic type argument for the value that can be used as a property in config objects.
+## Usage
 
-Helper methods will be created to find all Secret Properties of a struct (recursively) and bind them, collecting and reporting any errors.
+### Add the dependency
 
-Additionally a custom attribute will be created with a macro to decorate properties of suitable types e.g
+```toml
+[dependencies]
+secrets-rs = { path = "..." }  # or version once published
+```
+
+### Individual binding
 
 ```rust
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Config {
-  #[secret("urn:secrets-rs:env:SUPER_SECRET_KEY")]
-  pub key string
+use secrets_rs::{EnvSource, Secret, SourceRegistry};
+
+let mut api_key: Secret<String> =
+    Secret::new("urn:secrets-rs:env:MY_API_KEY")?;
+
+let mut registry = SourceRegistry::new();
+registry.register("env", EnvSource);
+
+api_key.bind(&registry)?;
+
+// Safe to log — shows the masked value
+println!("{api_key}");
+
+// Explicit opt-in to the real value
+let key: &str = api_key.value()?;
+```
+
+### Config struct with `#[derive(Bindable)]`
+
+For structs that contain multiple secrets, derive `Bindable` to generate `bind_all` support automatically. Non-`Secret` fields are ignored.
+
+```rust
+use secrets_rs::{EnvSource, Secret, SourceRegistry, bind_all};
+
+#[derive(secrets_rs::Bindable)]
+struct AppConfig {
+    db_password:     Secret<String>,
+    api_key:         Secret<String>,
+    max_connections: u32,            // ignored — not a Secret
+}
+
+let mut config = AppConfig {
+    db_password:     Secret::new("urn:secrets-rs:env:DB_PASSWORD")?,
+    api_key:         Secret::new("urn:secrets-rs:env:API_KEY")?,
+    max_connections: 10,
+};
+
+let mut registry = SourceRegistry::new();
+registry.register("env", EnvSource);
+
+// Binds db_password and api_key; collects all errors rather than
+// stopping at the first failure.
+bind_all(&mut config, &registry)?;
+```
+
+Without the derive macro, implement `Bindable` manually:
+
+```rust
+use secrets_rs::{Bindable, BindError, SourceRegistry};
+
+impl Bindable for AppConfig {
+    fn bind_secrets(&mut self, registry: &SourceRegistry) -> Result<(), Vec<BindError>> {
+        let mut errors = Vec::new();
+        if let Err(e) = self.db_password.bind(registry) { errors.push(e); }
+        if let Err(e) = self.api_key.bind(registry)     { errors.push(e); }
+        if errors.is_empty() { Ok(()) } else { Err(errors) }
+    }
 }
 ```
-for use with serialisation and deserialisation, e.g. via serde. The intent is to replace deserialisation with bind and serialisation with the masked value.
 
-Attempting to serialise or deserialise to a secret is an error.
+### Serde integration
 
-## Out of Scope
-* Writing Secrets to sources
-* In-memory encryption
+`Secret<T>` implements `Serialize` (produces the masked value string) and `Deserialize` (always returns an error — use `bind_all` instead).
 
+```rust
+#[derive(serde::Serialize)]
+struct ConfigSnapshot {
+    db_password: Secret<String>,  // serializes as "urn:...:DB_PASSWORD [string:28]"
+}
+```
 
+## Examples
 
+Runnable examples are in the [`examples/`](examples/) directory:
 
+```sh
+cargo run --example basic   # Secret lifecycle: masked vs real value
+cargo run --example config  # #[derive(Bindable)] with a config struct
+```
 
+## Out of scope
 
+- Writing secrets back to sources
+- In-memory encryption
