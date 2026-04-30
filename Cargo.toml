@@ -6,6 +6,14 @@ resolver = "2"
 name = "secrets-rs"
 version = "0.1.0"
 edition = "2024"
+authors = ["Chris Perfect <chris.perfect@gmail.com>"]
+description = "Safely surface secrets to Rust applications — masked by default, explicit opt-in for real values"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/cperfect/secrets-rs"
+homepage = "https://github.com/cperfect/secrets-rs"
+keywords = ["secrets", "configuration", "security", "env", "credentials"]
+categories = ["config", "authentication"]
 exclude = ["examples/"]
 
 [dependencies]

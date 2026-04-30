@@ -2,6 +2,14 @@
 name = "secrets-rs-macros"
 version = "0.1.0"
 edition = "2024"
+authors = ["Chris Perfect <chris.perfect@gmail.com>"]
+description = "Procedural macros for secrets-rs"
+license = "MIT"
+readme = "../README.md"
+repository = "https://github.com/cperfect/secrets-rs"
+homepage = "https://github.com/cperfect/secrets-rs"
+keywords = ["secrets", "configuration", "security", "macros"]
+categories = ["config", "authentication"]
 
 [lib]
 proc-macro = true
