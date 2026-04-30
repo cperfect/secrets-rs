@@ -123,13 +123,26 @@ impl Bindable for AppConfig {
 
 ### Serde integration
 
-`Secret<T>` implements `Serialize` (produces the masked value string) and `Deserialize` (always returns an error — use `bind_all` instead).
+`Secret<T>` implements both `Serialize` and `Deserialize`:
+
+- **Serialize** — always produces the masked value string, safe to use in any context.
+- **Deserialize** — accepts a `urn:secrets-rs:<source_id>:<name>` string and produces an unbound secret. Non-URN strings are rejected with an error.
+
+This means a config file can hold URN strings and be deserialized directly into a typed struct; `bind_all` is then called to resolve the actual values from their sources.
 
 ```rust
-#[derive(serde::Serialize)]
-struct ConfigSnapshot {
-    db_password: Secret<String>,  // serializes as "urn:...:DB_PASSWORD [string:28]"
+#[derive(serde::Deserialize, secrets_rs::Bindable)]
+struct AppConfig {
+    db_password:     Secret<String>,  // deserializes from "urn:secrets-rs:env:DB_PASSWORD"
+    max_connections: u32,
 }
+
+// Deserialize URNs from config file, then bind to real values
+let mut config: AppConfig = serde_json::from_str(&config_json)?;
+bind_all(&mut config, &registry)?;
+
+// Serializes as "urn:secrets-rs:env:DB_PASSWORD [string:28]"
+println!("{}", serde_json::to_string(&config.db_password)?);
 ```
 
 ## Examples

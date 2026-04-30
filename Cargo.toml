@@ -12,4 +12,4 @@ exclude = ["examples/"]
 serde              = { version = "1", features = ["derive"] }
 serde_json         = "1"
 thiserror          = "2"
-secrets-rs-macros  = { path = "macros" }
+secrets-rs-macros  = { path = "macros", version = "0.1.0" }
