@@ -1,0 +1,6 @@
+paths-ignore:
+  # Examples are demonstration code — URN strings are identifiers, not
+  # credential values, and Secret<T> Display always emits a masked value.
+  - examples
+  # Tests use the same patterns for the same reasons.
+  - tests
