@@ -167,13 +167,16 @@ impl<T: SecretValue> Serialize for Secret<T> {
     }
 }
 
-/// Deserialization of `Secret<T>` is intentionally unsupported. Use
-/// [`bind_all`](crate::bind_all) / [`Bindable`](crate::Bindable) instead.
+/// Deserializes a `Secret<T>` from a URN string, producing an unbound secret.
+///
+/// The input must be a valid `urn:secrets-rs:<source_id>:<name>` string.
+/// Any other value is rejected with a descriptive error. The resulting secret
+/// must be bound via [`bind_all`](crate::bind_all) before its value can be accessed.
 impl<'de, T: SecretValue> Deserialize<'de> for Secret<T> {
-    fn deserialize<D: Deserializer<'de>>(_deserializer: D) -> Result<Self, D::Error> {
-        Err(de::Error::custom(
-            "direct deserialization of Secret is not supported; use bind_all() instead",
-        ))
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        let urn = s.parse::<Urn>().map_err(de::Error::custom)?;
+        Ok(Self { urn, value: None })
     }
 }
 
@@ -243,8 +246,15 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_always_errors() {
-        let result = serde_json::from_str::<Secret<String>>(r#""anything""#);
+    fn deserialize_valid_urn_produces_unbound_secret() {
+        let s: Secret<String> = serde_json::from_str(r#""urn:secrets-rs:env:MY_KEY""#).unwrap();
+        assert_eq!(s.urn().to_string(), "urn:secrets-rs:env:MY_KEY");
+        assert!(s.value().is_err());
+    }
+
+    #[test]
+    fn deserialize_non_urn_string_errors() {
+        let result = serde_json::from_str::<Secret<String>>(r#""not-a-urn""#);
         assert!(result.is_err());
     }
 }
