@@ -4,7 +4,7 @@ resolver = "2"
 
 [package]
 name = "secrets-rs"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["Chris Perfect <chris.perfect@gmail.com>"]
 description = "Safely surface secrets to Rust applications — masked by default, explicit opt-in for real values"
