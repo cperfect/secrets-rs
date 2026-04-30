@@ -147,11 +147,16 @@ println!("{}", serde_json::to_string(&config.db_password)?);
 
 ## Examples
 
-Runnable examples are in the [`examples/`](examples/) directory:
+Runnable examples are in the [`examples/`](https://github.com/cperfect/secrets-rs/tree/main/examples) directory:
+
+| Example | Description |
+|---------|-------------|
+| [`basic.rs`](https://github.com/cperfect/secrets-rs/blob/main/examples/basic.rs) | Secret lifecycle: masked vs real value |
+| [`config.rs`](https://github.com/cperfect/secrets-rs/blob/main/examples/config.rs) | `#[derive(Bindable)]` with a config struct |
 
 ```sh
-cargo run --example basic   # Secret lifecycle: masked vs real value
-cargo run --example config  # #[derive(Bindable)] with a config struct
+cargo run --example basic
+cargo run --example config
 ```
 
 ## Out of scope
