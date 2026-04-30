@@ -2,22 +2,30 @@
 members = ["macros"]
 resolver = "2"
 
-[package]
-name = "secrets-rs"
-version = "0.1.1"
-edition = "2024"
-authors = ["Chris Perfect <chris.perfect@gmail.com>"]
-description = "Safely surface secrets to Rust applications — masked by default, explicit opt-in for real values"
-license = "MIT"
-readme = "README.md"
+[workspace.package]
+version    = "0.1.1"
+authors    = ["Chris Perfect <chris.perfect@gmail.com>"]
+edition    = "2024"
+license    = "MIT"
 repository = "https://github.com/cperfect/secrets-rs"
-homepage = "https://github.com/cperfect/secrets-rs"
-keywords = ["secrets", "configuration", "security", "env", "credentials"]
-categories = ["config", "authentication"]
-exclude = ["examples/"]
+homepage   = "https://github.com/cperfect/secrets-rs"
+
+[package]
+name        = "secrets-rs"
+version.workspace    = true
+edition.workspace    = true
+authors.workspace    = true
+license.workspace    = true
+repository.workspace = true
+homepage.workspace   = true
+description = "Safely surface secrets to Rust applications — masked by default, explicit opt-in for real values"
+readme      = "README.md"
+keywords    = ["secrets", "configuration", "security", "env", "credentials"]
+categories  = ["config", "authentication"]
+exclude     = ["examples/"]
 
 [dependencies]
 serde              = { version = "1", features = ["derive"] }
 serde_json         = "1"
 thiserror          = "2"
-secrets-rs-macros  = { path = "macros", version = "0.1.0" }
+secrets-rs-macros  = { path = "macros", version = "0.1.1" }
