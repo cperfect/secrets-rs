@@ -80,7 +80,7 @@ let key: &str = api_key.value()?;
 
 ### Config struct with `#[derive(Bindable)]`
 
-For structs that contain multiple secrets, derive `Bindable` to generate `bind_all` support automatically. Non-`Secret` fields are ignored.
+For structs that contain multiple secrets, derive `Bindable` to generate `bind_all` support automatically. Non-`Secret` fields are ignored. The derive macro is provided by the [`secrets-rs-macros`](https://crates.io/crates/secrets-rs-macros) crate, re-exported as `secrets_rs::Bindable`.
 
 ```rust
 use secrets_rs::{EnvSource, Secret, SourceRegistry, bind_all};
