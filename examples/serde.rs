@@ -28,8 +28,7 @@ fn main() {
     }"#;
 
     // Deserialize: Secret fields become unbound secrets identified by their URN.
-    let mut config: AppConfig =
-        serde_json::from_str(config_json).expect("invalid config");
+    let mut config: AppConfig = serde_json::from_str(config_json).expect("invalid config");
 
     // Still safe to log — secrets are unbound and show masked values.
     println!("Before bind:");
