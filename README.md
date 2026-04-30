@@ -153,10 +153,12 @@ Runnable examples are in the [`examples/`](https://github.com/cperfect/secrets-r
 |---------|-------------|
 | [`basic.rs`](https://github.com/cperfect/secrets-rs/blob/main/examples/basic.rs) | Secret lifecycle: masked vs real value |
 | [`config.rs`](https://github.com/cperfect/secrets-rs/blob/main/examples/config.rs) | `#[derive(Bindable)]` with a config struct |
+| [`serde.rs`](https://github.com/cperfect/secrets-rs/blob/main/examples/serde.rs) | Deserialize URNs from JSON, then bind |
 
 ```sh
 cargo run --example basic
 cargo run --example config
+cargo run --example serde
 ```
 
 ## Out of scope
