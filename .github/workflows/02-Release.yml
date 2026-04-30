@@ -2,11 +2,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version to release (e.g. 1.2.3, without v prefix)"
-        required: true
-        type: string
 
 jobs:
   release:
@@ -18,19 +13,17 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Verify version matches Cargo.toml
+      - name: Read version from Cargo.toml
+        id: version
         run: |
-          CRATE_VERSION=$(cargo metadata --no-deps --format-version 1 \
+          VERSION=$(cargo metadata --no-deps --format-version 1 \
             | jq -r '.packages[] | select(.name == "secrets-rs") | .version')
-          if [ "$CRATE_VERSION" != "${{ inputs.version }}" ]; then
-            echo "Version mismatch: Cargo.toml has $CRATE_VERSION but input is ${{ inputs.version }}"
-            exit 1
-          fi
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         run: |
-          gh release create "v${{ inputs.version }}" \
-            --title "v${{ inputs.version }}" \
+          gh release create "v${{ steps.version.outputs.value }}" \
+            --title "v${{ steps.version.outputs.value }}" \
             --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

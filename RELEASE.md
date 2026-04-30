@@ -24,11 +24,9 @@ Both `02-Release.yml` and `03-Publish.yml` run in the `release` environment, whi
 ## Creating a release
 
 1. Go to **Actions → Release** in the GitHub UI.
-2. Click **Run workflow** (branch: `main`).
-3. Enter the version to release (e.g. `1.2.3`, without the `v` prefix) — this must match the version in `Cargo.toml`.
-4. Click **Run workflow**.
+2. Click **Run workflow** (branch: `main`) then **Run workflow**.
 
-The workflow will verify the version matches `Cargo.toml`, then create a GitHub Release tagged `v<version>` with auto-generated release notes. This immediately triggers `03-Publish.yml`.
+The workflow reads the version directly from `Cargo.toml`, creates a GitHub Release tagged `v<version>` with auto-generated release notes, and immediately triggers `03-Publish.yml`.
 
 ## What happens automatically
 
