@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-05-01
+
+### Added
+
+- `FileSource` — built-in source backed by `std::fs::read`. Loads secrets from
+  the local filesystem; absolute paths are used as-is, relative paths resolve
+  against the process's current working directory. Primary use case is TLS keys
+  and certificates.
+
 ## [0.1.0] — 2026-04-30
 
 ### Added

@@ -191,7 +191,7 @@ dependencies = [
 
 [[package]]
 name = "secrets-rs"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "secrets-rs-macros",
  "serde",
@@ -202,7 +202,7 @@ dependencies = [
 
 [[package]]
 name = "secrets-rs-macros"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
