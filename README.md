@@ -39,11 +39,20 @@ The format is `<urn> [<type>:<size>]`. Calling `.value()` before binding returns
 
 A source is anything that can look up a secret by name and return its raw bytes. Sources are registered in a `SourceRegistry` keyed by the `source_id` from the URN.
 
-**Built-in source:**
+**Built-in sources:**
 
-| Source | `source_id` convention | Backed by |
-|--------|----------------------|-----------|
-| `EnvSource` | any string (e.g. `"env"`) | `std::env::var` |
+| Source | `source_id` convention | Backed by | Primary use case |
+|--------|----------------------|-----------|-----------------|
+| `EnvSource` | e.g. `"env"` | `std::env::var` | API keys, passwords |
+| `FileSource` | e.g. `"file"` | `std::fs::read` | TLS keys and certificates |
+
+`FileSource` uses the secret `name` directly as a file path. Absolute paths are used as-is; relative paths resolve against the process's current working directory.
+
+```
+urn:secrets-rs:file:/etc/ssl/private/server.key
+urn:secrets-rs:file:certs/ca.crt
+urn:secrets-rs:file:../shared/client.crt
+```
 
 ### Binding
 
@@ -55,7 +64,7 @@ Binding resolves a secret from its source and stores the typed value inside the 
 
 ```toml
 [dependencies]
-secrets-rs = { path = "..." }  # or version once published
+secrets-rs = "0.1"
 ```
 
 ### Individual binding
