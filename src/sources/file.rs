@@ -22,7 +22,7 @@ impl Source for FileSource {
             io::ErrorKind::NotFound => SourceError::NotFound {
                 name: name.to_owned(),
             },
-            _ => SourceError::Other(e.to_string()),
+            _ => SourceError::Other(format!("failed to read file `{}`: {}", name, e)),
         })
     }
 }
