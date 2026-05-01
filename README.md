@@ -64,7 +64,7 @@ Binding resolves a secret from its source and stores the typed value inside the 
 
 ```toml
 [dependencies]
-secrets-rs = "0.1"
+secrets-rs = "0.2"
 ```
 
 ### Individual binding
