@@ -22,13 +22,21 @@ fn ensure_fixtures() {
             .iter()
             .all(|f| dir.join(f).exists());
         if !all_present {
-            let status = std::process::Command::new("bash")
-                .arg(dir.join("generate.sh"))
-                .status()
-                .expect("failed to run generate.sh");
-            assert!(status.success(), "generate.sh exited with failure");
+            generate_fixtures(&dir);
         }
     });
+}
+
+fn generate_fixtures(dir: &std::path::Path) {
+    use rcgen::{CertifiedKey, generate_simple_self_signed};
+
+    let CertifiedKey { cert, signing_key } =
+        generate_simple_self_signed(vec!["secrets-rs-test".to_owned()])
+            .expect("failed to generate test certificate");
+
+    std::fs::write(dir.join("test.key"), signing_key.serialize_pem()).unwrap();
+    std::fs::write(dir.join("test.crt"), cert.pem()).unwrap();
+    std::fs::write(dir.join("test.der"), cert.der()).unwrap();
 }
 
 /// Restores the working directory on drop so that a panicking test cannot

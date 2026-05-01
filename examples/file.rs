@@ -4,8 +4,8 @@
 //!
 //! Run with: `cargo run --example file`
 //!
-//! Requires test fixtures — generate them first if needed:
-//!   bash tests/fixtures/generate.sh
+//! Requires test fixtures — run the integration tests first to generate them:
+//!   cargo test --test file_source
 
 use secrets_rs::{FileSource, Secret, SourceRegistry, bind_all};
 

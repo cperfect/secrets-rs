@@ -2,7 +2,7 @@
 
 .DS_Store
 
-# Generated test fixtures — run tests/fixtures/generate.sh to recreate
+# Generated test fixtures — run `cargo test --test file_source` to recreate
 tests/fixtures/*.key
 tests/fixtures/*.crt
 tests/fixtures/*.der
