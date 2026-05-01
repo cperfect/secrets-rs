@@ -46,4 +46,5 @@ pub use secret::{Secret, SecretValue};
 pub use secrets_rs_macros::Bindable;
 pub use source::{Source, SourceRegistry};
 pub use sources::env::EnvSource;
+pub use sources::file::FileSource;
 pub use urn::Urn;
