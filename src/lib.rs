@@ -10,7 +10,7 @@
 //! | Source | `source_id` | Backed by |
 //! |--------|-------------|-----------|
 //! | [`EnvSource`] | e.g. `"env"` | `std::env::var` |
-//! | [`FileSource`] | e.g. `"file"` | `std::fs::read` |
+//! | [`FileSource`] | e.g. `"file"` | `std::fs::read` (use [`FileSource::with_base`] for stable resolution in multi-threaded programs) |
 //!
 //! # Quick start
 //!

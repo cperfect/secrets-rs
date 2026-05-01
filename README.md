@@ -2,7 +2,7 @@
 
 A Rust library for safely retrieving and using secrets in applications, primarily for configuration.
 
-The core guarantee: a secret's real value must be explicitly requested. Every default access path — `Display`, `Debug`, and serde serialization — emits a **masked value** that is safe to include in logs and error reports.
+A secret's real value must be explicitly requested. Every default access path — `Display`, `Debug`, and serde serialization — emits a **masked value** that is safe to include in logs and error reports.
 
 ## Concepts
 
@@ -46,13 +46,22 @@ A source is anything that can look up a secret by name and return its raw bytes.
 | `EnvSource` | e.g. `"env"` | `std::env::var` | API keys, passwords |
 | `FileSource` | e.g. `"file"` | `std::fs::read` | TLS keys and certificates |
 
-`FileSource` uses the secret `name` directly as a file path. Absolute paths are used as-is; relative paths resolve against the process's current working directory.
+`FileSource` uses the secret `name` directly as a file path. Two construction modes are available:
+
+- **`FileSource::new()`** — resolves relative paths against the process's current working directory at call time. Simple, but non-deterministic if any code calls `set_current_dir` concurrently.
+- **`FileSource::with_base(dir)`** — captures an absolute base directory at construction time and resolves all relative paths against it, regardless of later CWD changes. Absolute paths in the URN name are still used as-is.
 
 ```
-urn:secrets-rs:file:/etc/ssl/private/server.key
-urn:secrets-rs:file:certs/ca.crt
-urn:secrets-rs:file:../shared/client.crt
+urn:secrets-rs:file:/etc/ssl/private/server.key   // absolute — same in both modes
+urn:secrets-rs:file:certs/ca.crt                  // relative — stable only with with_base
 ```
+
+```rust
+// Stable resolution — recommended for multi-threaded programs
+registry.register("file", FileSource::with_base("/etc/ssl/private"));
+```
+
+> **Security:** Because the URN name is used as a filesystem path without validation, binding a `FileSource` secret with an attacker-controlled URN is an **arbitrary file-read** vulnerability. Only bind URNs that come from **trusted configuration** (static code, operator-supplied config files with restricted write permissions, etc.). Never accept `urn:secrets-rs:file:...` URNs from untrusted input such as API requests, user-supplied data, or deserialized network payloads. `with_base` anchors relative resolution to a known directory but does **not** prevent path-traversal sequences (`../`) from escaping it; the trusted-configuration requirement still applies.
 
 ### Binding
 
@@ -169,7 +178,7 @@ Runnable examples are in the [`examples/`](https://github.com/cperfect/secrets-r
 cargo run --example basic
 cargo run --example config
 cargo run --example serde
-cargo run --example file   # requires TLS fixture files under tests/fixtures/
+cargo run --example file   # requires: cargo test --test file_source
 ```
 
 ## Out of scope
