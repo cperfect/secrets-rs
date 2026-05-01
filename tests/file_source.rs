@@ -17,9 +17,13 @@ fn fixtures_dir() -> PathBuf {
 
 fn ensure_fixtures() {
     FIXTURES.call_once(|| {
-        if !fixtures_dir().join("test.key").exists() {
+        let dir = fixtures_dir();
+        let all_present = ["test.key", "test.crt", "test.der"]
+            .iter()
+            .all(|f| dir.join(f).exists());
+        if !all_present {
             let status = std::process::Command::new("bash")
-                .arg(fixtures_dir().join("generate.sh"))
+                .arg(dir.join("generate.sh"))
                 .status()
                 .expect("failed to run generate.sh");
             assert!(status.success(), "generate.sh exited with failure");
