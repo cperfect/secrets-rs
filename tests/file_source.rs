@@ -112,9 +112,12 @@ fn binds_relative_path_with_parent_component() {
 
 #[test]
 fn missing_file_returns_name_not_found() {
-    let mut secret: Secret<Vec<u8>> =
-        Secret::new("urn:secrets-rs:file:/tmp/secrets-rs-no-such-file-xyz").unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let missing = dir.path().join("nonexistent.key");
+    // `missing` is guaranteed not to exist — the tempdir was just created empty.
+    let urn = format!("urn:secrets-rs:file:{}", missing.display());
 
+    let mut secret: Secret<Vec<u8>> = Secret::new(&urn).unwrap();
     let err = secret.bind(&registry()).unwrap_err();
     assert!(matches!(err, BindError::NameNotFound { .. }));
 }
