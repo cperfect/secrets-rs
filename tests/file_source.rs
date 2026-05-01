@@ -30,6 +30,8 @@ fn ensure_fixtures() {
 fn generate_fixtures(dir: &std::path::Path) {
     use rcgen::{CertifiedKey, generate_simple_self_signed};
 
+    std::fs::create_dir_all(dir).expect("failed to create fixtures directory");
+
     let CertifiedKey { cert, signing_key } =
         generate_simple_self_signed(vec!["secrets-rs-test".to_owned()])
             .expect("failed to generate test certificate");
