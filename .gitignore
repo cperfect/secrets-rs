@@ -1,3 +1,9 @@
 /target
 
 .DS_Store
+
+# Generated test fixtures — run tests/fixtures/generate.sh to recreate
+tests/fixtures/*.key
+tests/fixtures/*.crt
+tests/fixtures/*.der
+tests/fixtures/*.pem
