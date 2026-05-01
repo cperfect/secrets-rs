@@ -169,7 +169,7 @@ Runnable examples are in the [`examples/`](https://github.com/cperfect/secrets-r
 cargo run --example basic
 cargo run --example config
 cargo run --example serde
-cargo run --example file   # requires: bash tests/fixtures/generate.sh
+cargo run --example file   # requires TLS fixture files under tests/fixtures/
 ```
 
 ## Out of scope
