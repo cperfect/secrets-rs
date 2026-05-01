@@ -44,9 +44,9 @@ mod tests {
 
     #[test]
     fn returns_not_found_for_missing_file() {
-        let err = FileSource
-            .get("/tmp/secrets-rs-nonexistent-xyz")
-            .unwrap_err();
+        let dir = tempfile::tempdir().unwrap();
+        let missing = dir.path().join("nonexistent.key");
+        let err = FileSource.get(missing.to_str().unwrap()).unwrap_err();
         assert!(matches!(err, SourceError::NotFound { .. }));
     }
 }
