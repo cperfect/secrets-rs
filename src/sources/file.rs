@@ -88,7 +88,7 @@ impl Source for FileSource {
             io::ErrorKind::NotFound => SourceError::NotFound {
                 name: name.to_owned(),
             },
-            _ => SourceError::Other(format!("failed to read file `{}`: {}", path.display(), e)),
+            _ => SourceError::Other(format!("failed to read file `{}`: {}", name, e)),
         })
     }
 }
@@ -148,6 +148,29 @@ mod tests {
         assert!(
             matches!(&err, SourceError::NotFound { name } if name == "missing.key"),
             "unexpected error: {err:?}"
+        );
+    }
+
+    #[test]
+    fn other_error_uses_original_name_not_resolved_path() {
+        // Reading a directory produces EISDIR (an Other-class error).
+        // The error message must contain the original URN name, not the
+        // resolved path, so the base directory is never disclosed.
+        let base_dir = tempfile::tempdir().unwrap();
+        let sub_dir = base_dir.path().join("subdir");
+        std::fs::create_dir(&sub_dir).unwrap();
+
+        let src = FileSource::with_base(base_dir.path());
+        let err = src.get("subdir").unwrap_err();
+
+        let msg = match &err {
+            SourceError::Other(m) => m.clone(),
+            other => panic!("expected Other, got {other:?}"),
+        };
+        assert!(msg.contains("subdir"), "original name missing from: {msg}");
+        assert!(
+            !msg.contains(base_dir.path().to_str().unwrap()),
+            "base directory disclosed in: {msg}"
         );
     }
 }
