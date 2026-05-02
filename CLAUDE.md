@@ -47,7 +47,7 @@ The macro crate is a separate compilation unit because Rust requires proc-macros
 - **`Secret<T>`** — wraps a typed value. Before binding it exposes only the masked form; after binding the raw value is accessible via `Secret::value()`. `T` must implement `SecretValue`, which provides type label, byte conversion, and size reporting. Built-in impls: `String`, `Vec<u8>`, `serde_json::Value`.
 - **Masked value** — `<urn> [<type>:<size>]` when bound, `<urn> [UNBOUND]` when not. Safe for logs.
 - **URN identity** — each secret is addressed as `urn:secrets-rs:<source_id>:<name>`. Scheme and NID are case-insensitive (RFC 8141); `source_id` and `name` case-sensitivity depends on the source.
-- **`Source` trait** — anything that resolves a name to raw bytes. Registered in a `SourceRegistry` keyed by `source_id`. Only built-in source today: `EnvSource` (reads `std::env::var`).
+- **`Source` trait** — anything that resolves a name to raw bytes. Registered in a `SourceRegistry` keyed by `source_id`. Built-in sources: `EnvSource` (reads `std::env::var`) and `FileSource` (reads `std::fs::read`; supports `new()` for CWD-relative resolution or `with_base(dir)` for stable base-anchored resolution).
 - **Binding** — `Secret::bind(&mut self, registry)` resolves the secret from its source. Accessing the value before binding returns `UnboundError`.
 - **`Bindable` + `bind_all`** — `Bindable` is a trait for structs with `Secret` fields; `bind_all` calls `bind_secrets`, collecting all errors instead of stopping at the first. `#[derive(Bindable)]` (from the macros crate) generates the impl by detecting fields whose type path ends in `Secret`.
 

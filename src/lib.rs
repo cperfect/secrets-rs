@@ -5,6 +5,13 @@
 //! serde serialization) emit a **masked value** that is safe to log. The real
 //! value must be requested explicitly via [`Secret::value`].
 //!
+//! # Built-in sources
+//!
+//! | Source | `source_id` | Backed by |
+//! |--------|-------------|-----------|
+//! | [`EnvSource`] | e.g. `"env"` | `std::env::var` |
+//! | [`FileSource`] | e.g. `"file"` | `std::fs::read` (use [`FileSource::with_base`] for stable resolution in multi-threaded programs) |
+//!
 //! # Quick start
 //!
 //! ```rust
@@ -46,4 +53,5 @@ pub use secret::{Secret, SecretValue};
 pub use secrets_rs_macros::Bindable;
 pub use source::{Source, SourceRegistry};
 pub use sources::env::EnvSource;
+pub use sources::file::FileSource;
 pub use urn::Urn;
