@@ -29,6 +29,16 @@ pub enum SourceError {
     Other(String),
 }
 
+/// Errors produced by a [`crate::Source`] when registering sources.
+#[derive(Debug, thiserror::Error)]
+pub enum SourceRegisterError {
+    #[error("source id '{id}' is already registered")]
+    SourceIdExists { id: String },
+
+    #[error("source registry error: {0}")]
+    Other(String),
+}
+
 /// Errors that can occur while binding a secret to its value.
 #[derive(Debug, thiserror::Error)]
 pub enum BindError {

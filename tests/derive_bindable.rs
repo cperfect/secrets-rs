@@ -1,4 +1,4 @@
-use secrets_rs::{EnvSource, Secret, SourceRegistry, bind_all};
+use secrets_rs::{Secret, SourceRegistry, bind_all};
 
 #[derive(secrets_rs::Bindable)]
 struct Config {
@@ -21,9 +21,7 @@ fn derive_macro_binds_secret_fields_only() {
         timeout_secs: 30,
     };
 
-    let mut registry = SourceRegistry::new();
-    registry.register("env", EnvSource);
-
+    let registry = SourceRegistry::new();
     bind_all(&mut config, &registry).unwrap();
 
     assert_eq!(config.api_key.value().unwrap(), "key123");
@@ -49,9 +47,7 @@ fn derive_macro_collects_all_bind_errors() {
         timeout_secs: 30,
     };
 
-    let mut registry = SourceRegistry::new();
-    registry.register("env", EnvSource);
-
+    let registry = SourceRegistry::new();
     let errors = bind_all(&mut config, &registry).unwrap_err();
     assert_eq!(errors.len(), 2);
 }

@@ -184,7 +184,6 @@ impl<'de, T: SecretValue> Deserialize<'de> for Secret<T> {
 mod tests {
     use super::*;
     use crate::source::SourceRegistry;
-    use crate::sources::env::EnvSource;
 
     #[test]
     fn unbound_masked_value() {
@@ -217,8 +216,7 @@ mod tests {
     fn bound_masked_value_includes_type_and_length() {
         unsafe { std::env::set_var("SECRET_TEST_MASKED", "hello") };
         let mut s: Secret<String> = Secret::new("urn:secrets-rs:env:SECRET_TEST_MASKED").unwrap();
-        let mut registry = SourceRegistry::new();
-        registry.register("env", EnvSource);
+        let registry = SourceRegistry::new();
         s.bind(&registry).unwrap();
         assert_eq!(
             s.masked_value(),
@@ -231,8 +229,7 @@ mod tests {
     fn value_after_bind_returns_correct_value() {
         unsafe { std::env::set_var("SECRET_TEST_VALUE", "s3cr3t") };
         let mut s: Secret<String> = Secret::new("urn:secrets-rs:env:SECRET_TEST_VALUE").unwrap();
-        let mut registry = SourceRegistry::new();
-        registry.register("env", EnvSource);
+        let registry = SourceRegistry::new();
         s.bind(&registry).unwrap();
         assert_eq!(s.value().unwrap(), "s3cr3t");
         unsafe { std::env::remove_var("SECRET_TEST_VALUE") };

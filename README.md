@@ -63,6 +63,28 @@ registry.register("file", FileSource::with_base("/etc/ssl/private"));
 
 > **Security:** Because the URN name is used as a filesystem path without validation, binding a `FileSource` secret with an attacker-controlled URN is an **arbitrary file-read** vulnerability. Only bind URNs that come from **trusted configuration** (static code, operator-supplied config files with restricted write permissions, etc.). Never accept `urn:secrets-rs:file:...` URNs from untrusted input such as API requests, user-supplied data, or deserialized network payloads. `with_base` anchors relative resolution to a known directory but does **not** prevent path-traversal sequences (`../`) from escaping it; the trusted-configuration requirement still applies.
 
+### SourceRegistry
+
+`SourceRegistry` maps the `source_id` component of a URN to the `Source` implementation that resolves it. When `bind` is called on a secret, the registry looks up the source by the `source_id` extracted from the secret's URN and delegates to its `get` method.
+
+```rust
+// EnvSource is already registered. Add FileSource for filesystem secrets.
+let mut registry = SourceRegistry::new();
+registry.register("file", FileSource::with_base("/run/secrets"));
+// urn:secrets-rs:env:...  → resolved by EnvSource (default)
+// urn:secrets-rs:file:... → resolved by FileSource
+```
+
+A few design points worth knowing:
+
+**`EnvSource` is pre-registered under `"env"`.** `SourceRegistry::new()` registers `EnvSource` automatically, so env-backed secrets work without any manual setup. Calling `register("env", ...)` again replaces it, which is useful in tests or when you need a custom env implementation.
+
+**The `source_id` is application-defined for everything else.** `"file"` is a convention, not a fixed identifier. You can register the same source type under multiple IDs (e.g. `"file-jwt-keys"` and `"file-certs"`, each pointing to a different `FileSource` base directory), or use any string that matches the URN scheme.
+
+**Sources are type-erased.** `SourceRegistry` stores `Box<dyn Source>`, so you can mix arbitrary `Source` implementations in the same registry without the registry itself being generic. The `Source` trait requires `Send + Sync`, which means a registry in an `Arc` is safe to share across threads.
+
+**Secrets and the registry are decoupled.** A `Secret` is just a URN until `bind` is called — it holds no reference to any source. This means secrets can be constructed or deserialized freely before sources are configured, and you can supply a different registry in tests without changing how secrets are declared.
+
 ### Binding
 
 Binding resolves a secret from its source and stores the typed value inside the `Secret<T>` struct. You can bind secrets individually with `Secret::bind`, or bind every secret in a struct at once with `bind_all`.
@@ -79,14 +101,13 @@ secrets-rs = "0.2"
 ### Individual binding
 
 ```rust
-use secrets_rs::{EnvSource, Secret, SourceRegistry};
+use secrets_rs::{Secret, SourceRegistry};
 
 let mut api_key: Secret<String> =
     Secret::new("urn:secrets-rs:env:MY_API_KEY")?;
 
-let mut registry = SourceRegistry::new();
-registry.register("env", EnvSource);
-
+// EnvSource is registered under "env" by default.
+let registry = SourceRegistry::new();
 api_key.bind(&registry)?;
 
 // Safe to log — shows the masked value
@@ -101,7 +122,7 @@ let key: &str = api_key.value()?;
 For structs that contain multiple secrets, derive `Bindable` to generate `bind_all` support automatically. Non-`Secret` fields are ignored. The derive macro is provided by the [`secrets-rs-macros`](https://crates.io/crates/secrets-rs-macros) crate, re-exported as `secrets_rs::Bindable`.
 
 ```rust
-use secrets_rs::{EnvSource, Secret, SourceRegistry, bind_all};
+use secrets_rs::{Secret, SourceRegistry, bind_all};
 
 #[derive(secrets_rs::Bindable)]
 struct AppConfig {
@@ -116,11 +137,10 @@ let mut config = AppConfig {
     max_connections: 10,
 };
 
-let mut registry = SourceRegistry::new();
-registry.register("env", EnvSource);
-
+// EnvSource is registered under "env" by default.
 // Binds db_password and api_key; collects all errors rather than
 // stopping at the first failure.
+let registry = SourceRegistry::new();
 bind_all(&mut config, &registry)?;
 ```
 
