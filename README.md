@@ -238,6 +238,8 @@ let key_for_worker = Arc::clone(&api_key);
 When two subsystems must bind independently — for example because they use different registries or have different initialization lifetimes — use [`Secret::urn`] to obtain the URN from an existing secret and pass it to `Secret::new` to create a second unbound instance. Each subsystem then binds its own copy.
 
 ```rust
+use secrets_rs::Secret;
+
 let original: Secret<String> = Secret::new("urn:secrets-rs:env:API_KEY")?;
 
 // Subsystem B gets its own unbound secret with the same URN.
