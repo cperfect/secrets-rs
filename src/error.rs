@@ -39,7 +39,7 @@ pub enum SourceError {
 #[derive(Debug, thiserror::Error, PartialEq)]
 pub enum SourceRegisterError {
     #[error(
-        "source id '{0}' contains characters that are invalid in a URN source_id; \
+        "source id '{0}' is empty or contains characters that are invalid in a URN source_id; \
          allowed: ASCII letters, digits, and `-._~!$&'()*+,;=@/`"
     )]
     InvalidSourceId(String),
