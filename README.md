@@ -224,6 +224,7 @@ When only one secret needs to be shared (rather than an entire config struct), w
 
 ```rust
 use std::sync::Arc;
+use secrets_rs::{Secret, SourceRegistry};
 
 let mut api_key: Secret<String> = Secret::new("urn:secrets-rs:env:API_KEY")?;
 api_key.bind(&SourceRegistry::new())?;
