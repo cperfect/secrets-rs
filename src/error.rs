@@ -16,8 +16,9 @@ pub enum UrnParseError {
     EmptySourceId,
 
     #[error(
-        "source_id '{0}' contains characters that are invalid in a URN; \
-         allowed: ASCII letters, digits, and `-._~!$&'()*+,;=@/`"
+        "source_id '{0}' contains characters that are invalid in a URN source_id; \
+         allowed: literal ASCII letters, digits, and `-._~!$&'()*+,;=@/` \
+         (percent-encoded sequences are not accepted)"
     )]
     InvalidSourceId(String),
 
@@ -40,7 +41,8 @@ pub enum SourceError {
 pub enum SourceRegisterError {
     #[error(
         "source id '{0}' is empty or contains characters that are invalid in a URN source_id; \
-         allowed: ASCII letters, digits, and `-._~!$&'()*+,;=@/`"
+         allowed: literal ASCII letters, digits, and `-._~!$&'()*+,;=@/` \
+         (percent-encoded sequences are not accepted)"
     )]
     InvalidSourceId(String),
 }

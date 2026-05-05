@@ -5,8 +5,11 @@ use crate::error::UrnParseError;
 /// Returns `true` if every character in `s` is valid in the `source_id`
 /// position of a `urn:secrets-rs:<source_id>:<name>` URN.
 ///
-/// Valid characters are the RFC 8141 NSS pchar set minus `:` (which is our
-/// separator): ASCII letters, digits, and `-._~!$&'()*+,;=@/`.
+/// Accepts the *literal* characters from the RFC 8141 NSS pchar set, minus `:`
+/// (which is our segment separator): ASCII letters, digits, and
+/// `-._~!$&'()*+,;=@/`. Percent-encoded sequences (`%XX`) are **not**
+/// accepted — source IDs are developer-defined identifiers where encoding adds
+/// no value and would require normalisation logic (`%41` vs `A`, etc.).
 pub(crate) fn is_valid_source_id(s: &str) -> bool {
     !s.is_empty()
         && s.chars().all(|c| {
