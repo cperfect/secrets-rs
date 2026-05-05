@@ -191,6 +191,60 @@ bind_all(&mut config, &registry)?;
 println!("{}", serde_json::to_string(&config.db_password)?);
 ```
 
+### Sharing secrets across subsystems
+
+`Secret<T>` deliberately does not implement `Clone`. Cloning a bound secret would create a second full copy of the secret value in memory, multiplying the number of locations an attacker could read it from in a core dump, swap, or cold-boot scenario. The library's position is that there should be one copy of each secret value in memory at a time, shared by reference.
+
+When multiple parts of an application need access to the same secret, prefer keeping one bound copy and distributing a reference to it rather than creating multiple independent copies. Three patterns apply, in order of preference:
+
+**1. `Arc<AppConfig>` — bind once, share the whole config (recommended)**
+
+The simplest approach: build and bind your config struct at startup, wrap it in an `Arc`, and hand clones of the `Arc` to each subsystem. No secret values are duplicated; all subsystems read from the same allocation.
+
+```rust
+use std::sync::Arc;
+use secrets_rs::{Secret, SourceRegistry, bind_all};
+
+#[derive(secrets_rs::Bindable)]
+struct AppConfig {
+    api_key:     Secret<String>,
+    db_password: Secret<String>,
+}
+
+let mut config = AppConfig { /* ... */ };
+bind_all(&mut config, &SourceRegistry::new())?;
+
+let config = Arc::new(config);          // bind_all consumed &mut, now freeze
+let config_for_worker = Arc::clone(&config);   // zero-copy share
+```
+
+**2. `Arc<Secret<T>>` — share a single bound secret**
+
+When only one secret needs to be shared (rather than an entire config struct), wrap just that secret in an `Arc` after binding.
+
+```rust
+use std::sync::Arc;
+
+let mut api_key: Secret<String> = Secret::new("urn:secrets-rs:env:API_KEY")?;
+api_key.bind(&SourceRegistry::new())?;
+
+let api_key = Arc::new(api_key);
+let key_for_worker = Arc::clone(&api_key);
+```
+
+**3. `Secret::urn()` — construct an independent unbound secret**
+
+When two subsystems must bind independently — for example because they use different registries or have different initialization lifetimes — use [`Secret::urn`] to obtain the URN from an existing secret and pass it to `Secret::new` to create a second unbound instance. Each subsystem then binds its own copy.
+
+```rust
+let original: Secret<String> = Secret::new("urn:secrets-rs:env:API_KEY")?;
+
+// Subsystem B gets its own unbound secret with the same URN.
+let for_subsystem_b: Secret<String> = Secret::new(&original.urn().to_string())?;
+```
+
+Note that this creates two independent bindings, so each subsystem fetches the value from the source separately. Prefer patterns 1 or 2 when a single fetch is sufficient.
+
 ## Examples
 
 Runnable examples are in the [`examples/`](https://github.com/cperfect/secrets-rs/tree/main/examples) directory:
@@ -201,12 +255,14 @@ Runnable examples are in the [`examples/`](https://github.com/cperfect/secrets-r
 | [`config.rs`](https://github.com/cperfect/secrets-rs/blob/main/examples/config.rs) | `#[derive(Bindable)]` with a config struct |
 | [`serde.rs`](https://github.com/cperfect/secrets-rs/blob/main/examples/serde.rs) | Deserialize URNs from JSON, then bind |
 | [`file.rs`](https://github.com/cperfect/secrets-rs/blob/main/examples/file.rs) | Load TLS key and certificate with `FileSource` |
+| [`sharing.rs`](https://github.com/cperfect/secrets-rs/blob/main/examples/sharing.rs) | Share secrets across subsystems: `Arc<AppConfig>`, `Arc<Secret<T>>`, `Secret::urn()` |
 
 ```sh
 cargo run --example basic
 cargo run --example config
 cargo run --example serde
-cargo run --example file   # requires: cargo test --test file_source
+cargo run --example file      # requires: cargo test --test file_source
+cargo run --example sharing
 ```
 
 ## Out of scope
