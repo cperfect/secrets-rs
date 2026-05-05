@@ -79,7 +79,15 @@ A few design points worth knowing:
 
 **`EnvSource` is pre-registered under `"env"`.** `SourceRegistry::new()` registers `EnvSource` automatically, so env-backed secrets work without any manual setup. Calling `register("env", ...)` again replaces it, which is useful in tests or when you need a custom env implementation.
 
-**The `source_id` is application-defined for everything else.** `"file"` is a convention, not a fixed identifier. You can register the same source type under multiple IDs (e.g. `"file-jwt-keys"` and `"file-certs"`, each pointing to a different `FileSource` base directory), or use any string that matches the URN scheme.
+**The `source_id` is application-defined for everything else, with a recommended naming convention.** Prefix the id with the source type, separated by `-`:
+
+| Pattern | Example | When to use |
+|---------|---------|-------------|
+| `"file"` | `"file"` | Single `FileSource` instance |
+| `"file-<qualifier>"` | `"file-certs"`, `"file-keys"` | Multiple `FileSource` instances with different base directories |
+| `"env-<qualifier>"` | `"env-prod"`, `"env-staging"` | Multiple env sources pointing to different environments |
+
+This makes the backend immediately readable from the URN itself — `urn:secrets-rs:file-certs:server.der` is unambiguously file-backed, without inspecting the registry. Any string that passes character validation is accepted; the convention is not enforced by the library.
 
 **Sources are type-erased.** `SourceRegistry` stores `Box<dyn Source>`, so you can mix arbitrary `Source` implementations in the same registry without the registry itself being generic. The `Source` trait requires `Send + Sync`, which means a registry in an `Arc` is safe to share across threads.
 
