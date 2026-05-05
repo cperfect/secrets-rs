@@ -9,13 +9,13 @@
 //!
 //! | Source | `source_id` | Backed by |
 //! |--------|-------------|-----------|
-//! | [`EnvSource`] | e.g. `"env"` | `std::env::var` |
+//! | [`EnvSource`] | `"env"` (pre-registered) | `std::env::var` |
 //! | [`FileSource`] | e.g. `"file"` | `std::fs::read` (use [`FileSource::with_base`] for stable resolution in multi-threaded programs) |
 //!
 //! # Quick start
 //!
 //! ```rust
-//! use secrets_rs::{EnvSource, Secret, SourceRegistry, bind_all};
+//! use secrets_rs::{Secret, SourceRegistry, bind_all};
 //!
 //! #[derive(secrets_rs::Bindable)]
 //! struct Config {
@@ -27,8 +27,8 @@
 //!     api_key: Secret::new("urn:secrets-rs:env:API_KEY").unwrap(),
 //! };
 //!
-//! let mut registry = SourceRegistry::new();
-//! registry.register("env", EnvSource);
+//! // EnvSource is registered under "env" by default.
+//! let registry = SourceRegistry::new();
 //! bind_all(&mut config, &registry).unwrap();
 //!
 //! // Masked value — safe to log
@@ -48,7 +48,7 @@ mod bindable;
 mod secret;
 
 pub use bindable::{Bindable, bind_all};
-pub use error::{BindError, SourceError, UnboundError, UrnParseError};
+pub use error::{BindError, SourceError, SourceRegisterError, UnboundError, UrnParseError};
 pub use secret::{Secret, SecretValue};
 pub use secrets_rs_macros::Bindable;
 pub use source::{Source, SourceRegistry};

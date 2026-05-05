@@ -45,7 +45,7 @@ pub fn bind_all<T: Bindable>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Secret, SourceRegistry, sources::env::EnvSource};
+    use crate::{Secret, SourceRegistry};
 
     struct Config {
         key_a: Secret<String>,
@@ -81,9 +81,7 @@ mod tests {
             key_b: Secret::new("urn:secrets-rs:env:BINDABLE_TEST_B").unwrap(),
         };
 
-        let mut registry = SourceRegistry::new();
-        registry.register("env", EnvSource);
-
+        let registry = SourceRegistry::new();
         bind_all(&mut config, &registry).unwrap();
 
         assert_eq!(config.key_a.value().unwrap(), "alpha");
@@ -107,9 +105,7 @@ mod tests {
             key_b: Secret::new("urn:secrets-rs:env:BINDABLE_MISSING_B").unwrap(),
         };
 
-        let mut registry = SourceRegistry::new();
-        registry.register("env", EnvSource);
-
+        let registry = SourceRegistry::new();
         let errors = bind_all(&mut config, &registry).unwrap_err();
         assert_eq!(errors.len(), 2);
     }

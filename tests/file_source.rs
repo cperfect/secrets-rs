@@ -63,7 +63,7 @@ fn with_cwd_as_manifest<F: FnOnce()>(f: F) {
 
 fn registry() -> SourceRegistry {
     let mut r = SourceRegistry::new();
-    r.register("file", FileSource::new());
+    r.register("file", FileSource::new()).unwrap();
     r
 }
 

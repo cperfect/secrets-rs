@@ -436,7 +436,7 @@ dependencies = [
 
 [[package]]
 name = "secrets-rs"
-version = "0.2.0"
+version = "1.0.0"
 dependencies = [
  "rcgen",
  "secrets-rs-macros",
@@ -448,7 +448,7 @@ dependencies = [
 
 [[package]]
 name = "secrets-rs-macros"
-version = "0.2.0"
+version = "1.0.0"
 dependencies = [
  "proc-macro2",
  "quote",

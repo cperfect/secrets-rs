@@ -4,7 +4,7 @@
 //!
 //! Run with: `cargo run --example serde`
 
-use secrets_rs::{EnvSource, Secret, SourceRegistry, bind_all};
+use secrets_rs::{Secret, SourceRegistry, bind_all};
 
 #[derive(serde::Deserialize, secrets_rs::Bindable)]
 struct AppConfig {
@@ -36,9 +36,8 @@ fn main() {
     println!("  api_key         : {}", config.api_key);
     println!("  max_connections : {}", config.max_connections);
 
-    let mut registry = SourceRegistry::new();
-    registry.register("env", EnvSource);
-
+    // EnvSource is registered under "env" by default.
+    let registry = SourceRegistry::new();
     bind_all(&mut config, &registry).expect("one or more secrets could not be bound");
 
     // Secrets are now bound — masked values show type and length.

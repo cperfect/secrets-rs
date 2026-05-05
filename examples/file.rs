@@ -1,16 +1,18 @@
 //! Demonstrates loading TLS credentials from the filesystem using `FileSource`.
 //!
-//! Two construction modes are shown:
+//! Three patterns are shown:
 //!
-//! - `FileSource::with_base(dir)` — captures a base directory at construction
-//!   time; relative URN names are resolved against it, which is stable in
-//!   multi-threaded programs regardless of later `set_current_dir` calls.
-//!   Recommended for production code.
+//! 1. **Single `with_base` source** — one `FileSource` registered under one
+//!    `source_id`; all relative URN names resolve against its base directory.
 //!
-//! - `FileSource::new()` — resolves relative paths against the process's CWD
-//!   at call time. Fine for single-threaded or CLI contexts where CWD is fixed.
+//! 2. **Multiple sources, different base directories** — two `FileSource`
+//!    instances registered under separate IDs (`"file-keys"` and `"file-certs"`), each
+//!    anchored to its own directory. URNs select which source to use via the
+//!    `source_id` component, keeping key material and certificates in separate
+//!    locations with independent permissions.
 //!
-//! Absolute URN paths work the same in both modes.
+//! 3. **`FileSource::new()` with an absolute path** — shows that absolute URN
+//!    names bypass the base directory and work the same in both modes.
 //!
 //! Run with: `cargo run --example file`
 //!
@@ -52,7 +54,9 @@ fn main() {
     println!("  certificate : {}", config.certificate);
 
     let mut registry = SourceRegistry::new();
-    registry.register("file", FileSource::with_base(&fixtures));
+    registry
+        .register("file", FileSource::with_base(&fixtures))
+        .unwrap();
 
     bind_all(&mut config, &registry).expect("failed to load TLS credentials");
 
@@ -65,6 +69,58 @@ fn main() {
     println!("\nKey starts with : {}", key_pem.lines().next().unwrap());
     println!("Cert DER tag    : 0x{:02X} (ASN.1 SEQUENCE)", cert_der[0]);
 
+    // ---- multiple sources: separate base directories per source_id ------------
+    //
+    // Convention: prefix the source_id with the source type ("file-<qualifier>").
+    // This makes the backend readable directly from the URN:
+    //   urn:secrets-rs:file-keys:server.key  → FileSource anchored to the keys dir
+    //   urn:secrets-rs:file-certs:server.der → FileSource anchored to the certs dir
+    //
+    // Key material and certificates live in separate directories with independent
+    // filesystem permissions; the URN source_id component selects which to use.
+
+    let keys_dir = tempfile::tempdir().unwrap();
+    let certs_dir = tempfile::tempdir().unwrap();
+
+    std::fs::copy(
+        fixtures.join("test.key"),
+        keys_dir.path().join("server.key"),
+    )
+    .unwrap();
+    std::fs::copy(
+        fixtures.join("test.der"),
+        certs_dir.path().join("server.der"),
+    )
+    .unwrap();
+
+    let mut multi_registry = SourceRegistry::new();
+    multi_registry
+        .register("file-keys", FileSource::with_base(keys_dir.path()))
+        .unwrap();
+    multi_registry
+        .register("file-certs", FileSource::with_base(certs_dir.path()))
+        .unwrap();
+
+    let mut server_key: Secret<String> =
+        Secret::new("urn:secrets-rs:file-keys:server.key").unwrap();
+    let mut server_cert: Secret<Vec<u8>> =
+        Secret::new("urn:secrets-rs:file-certs:server.der").unwrap();
+
+    server_key.bind(&multi_registry).unwrap();
+    server_cert.bind(&multi_registry).unwrap();
+
+    println!("\nTwo sources, separate base directories:");
+    println!("  server_key  : {}", server_key);
+    println!("  server_cert : {}", server_cert);
+    println!(
+        "  Key starts  : {}",
+        server_key.value().unwrap().lines().next().unwrap()
+    );
+    println!(
+        "  Cert tag    : 0x{:02X} (ASN.1 SEQUENCE)",
+        server_cert.value().unwrap()[0]
+    );
+
     // ---- new(): absolute paths work the same regardless of mode ---------------
     //
     // When the URN name is an absolute path, both modes behave identically.
@@ -76,7 +132,7 @@ fn main() {
     let mut cert_pem: Secret<String> = Secret::new(&abs_urn).unwrap();
 
     let mut registry2 = SourceRegistry::new();
-    registry2.register("file", FileSource::new());
+    registry2.register("file", FileSource::new()).unwrap();
     cert_pem.bind(&registry2).unwrap();
 
     println!(

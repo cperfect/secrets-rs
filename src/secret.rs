@@ -97,7 +97,25 @@ impl<T: SecretValue> Secret<T> {
         })
     }
 
-    /// Returns the underlying URN.
+    /// Returns the URN that identifies this secret.
+    ///
+    /// The URN is available regardless of whether the secret has been bound.
+    /// It contains only the source identifier and secret name — never the
+    /// secret value — so it is safe to log, store, or compare.
+    ///
+    /// The primary use case is constructing a second unbound secret with the
+    /// same identity, for example to hand the same logical secret to two
+    /// independent subsystems that each bind it separately:
+    ///
+    /// ```rust
+    /// # use secrets_rs::Secret;
+    /// let original: Secret<String> =
+    ///     Secret::new("urn:secrets-rs:env:API_KEY").unwrap();
+    ///
+    /// // Create a second unbound secret with the same URN.
+    /// let copy: Secret<String> =
+    ///     Secret::new(&original.urn().to_string()).unwrap();
+    /// ```
     pub fn urn(&self) -> &Urn {
         &self.urn
     }
@@ -184,7 +202,6 @@ impl<'de, T: SecretValue> Deserialize<'de> for Secret<T> {
 mod tests {
     use super::*;
     use crate::source::SourceRegistry;
-    use crate::sources::env::EnvSource;
 
     #[test]
     fn unbound_masked_value() {
@@ -217,8 +234,7 @@ mod tests {
     fn bound_masked_value_includes_type_and_length() {
         unsafe { std::env::set_var("SECRET_TEST_MASKED", "hello") };
         let mut s: Secret<String> = Secret::new("urn:secrets-rs:env:SECRET_TEST_MASKED").unwrap();
-        let mut registry = SourceRegistry::new();
-        registry.register("env", EnvSource);
+        let registry = SourceRegistry::new();
         s.bind(&registry).unwrap();
         assert_eq!(
             s.masked_value(),
@@ -231,8 +247,7 @@ mod tests {
     fn value_after_bind_returns_correct_value() {
         unsafe { std::env::set_var("SECRET_TEST_VALUE", "s3cr3t") };
         let mut s: Secret<String> = Secret::new("urn:secrets-rs:env:SECRET_TEST_VALUE").unwrap();
-        let mut registry = SourceRegistry::new();
-        registry.register("env", EnvSource);
+        let registry = SourceRegistry::new();
         s.bind(&registry).unwrap();
         assert_eq!(s.value().unwrap(), "s3cr3t");
         unsafe { std::env::remove_var("SECRET_TEST_VALUE") };
@@ -256,5 +271,31 @@ mod tests {
     fn deserialize_non_urn_string_errors() {
         let result = serde_json::from_str::<Secret<String>>(r#""not-a-urn""#);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn urn_returns_source_id_and_name() {
+        let s: Secret<String> = Secret::new("urn:secrets-rs:env:MY_KEY").unwrap();
+        assert_eq!(s.urn().source_id, "env");
+        assert_eq!(s.urn().name, "MY_KEY");
+    }
+
+    #[test]
+    fn urn_is_unchanged_after_bind() {
+        unsafe { std::env::set_var("SECRET_URN_BIND_TEST", "value") };
+        let mut s: Secret<String> = Secret::new("urn:secrets-rs:env:SECRET_URN_BIND_TEST").unwrap();
+        let urn_before = s.urn().to_string();
+        let registry = SourceRegistry::new();
+        s.bind(&registry).unwrap();
+        assert_eq!(s.urn().to_string(), urn_before);
+        unsafe { std::env::remove_var("SECRET_URN_BIND_TEST") };
+    }
+
+    #[test]
+    fn urn_can_be_used_to_construct_second_unbound_secret() {
+        let original: Secret<String> = Secret::new("urn:secrets-rs:env:MY_KEY").unwrap();
+        let copy: Secret<String> = Secret::new(&original.urn().to_string()).unwrap();
+        assert_eq!(original.urn(), copy.urn());
+        assert!(copy.value().is_err());
     }
 }
