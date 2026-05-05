@@ -6,7 +6,7 @@
 //!    `source_id`; all relative URN names resolve against its base directory.
 //!
 //! 2. **Multiple sources, different base directories** — two `FileSource`
-//!    instances registered under separate IDs (`"keys"` and `"certs"`), each
+//!    instances registered under separate IDs (`"file-keys"` and `"file-certs"`), each
 //!    anchored to its own directory. URNs select which source to use via the
 //!    `source_id` component, keeping key material and certificates in separate
 //!    locations with independent permissions.
