@@ -15,6 +15,12 @@ pub enum UrnParseError {
     #[error("source_id must not be empty")]
     EmptySourceId,
 
+    #[error(
+        "source_id '{0}' contains characters that are invalid in a URN; \
+         allowed: ASCII letters, digits, and `-._~!$&'()*+,;=@/`"
+    )]
+    InvalidSourceId(String),
+
     #[error("name must not be empty")]
     EmptyName,
 }
@@ -29,14 +35,14 @@ pub enum SourceError {
     Other(String),
 }
 
-/// Errors produced by a [`crate::Source`] when registering sources.
-#[derive(Debug, thiserror::Error)]
+/// Errors returned by [`crate::SourceRegistry::register`].
+#[derive(Debug, thiserror::Error, PartialEq)]
 pub enum SourceRegisterError {
-    #[error("source id '{id}' is already registered")]
-    SourceIdExists { id: String },
-
-    #[error("source registry error: {0}")]
-    Other(String),
+    #[error(
+        "source id '{0}' contains characters that are invalid in a URN source_id; \
+         allowed: ASCII letters, digits, and `-._~!$&'()*+,;=@/`"
+    )]
+    InvalidSourceId(String),
 }
 
 /// Errors that can occur while binding a secret to its value.

@@ -48,7 +48,7 @@ mod bindable;
 mod secret;
 
 pub use bindable::{Bindable, bind_all};
-pub use error::{BindError, SourceError, UnboundError, UrnParseError};
+pub use error::{BindError, SourceError, SourceRegisterError, UnboundError, UrnParseError};
 pub use secret::{Secret, SecretValue};
 pub use secrets_rs_macros::Bindable;
 pub use source::{Source, SourceRegistry};

@@ -58,7 +58,7 @@ urn:secrets-rs:file:certs/ca.crt                  // relative — stable only wi
 
 ```rust
 // Stable resolution — recommended for multi-threaded programs
-registry.register("file", FileSource::with_base("/etc/ssl/private"));
+registry.register("file", FileSource::with_base("/etc/ssl/private")).unwrap();
 ```
 
 > **Security:** Because the URN name is used as a filesystem path without validation, binding a `FileSource` secret with an attacker-controlled URN is an **arbitrary file-read** vulnerability. Only bind URNs that come from **trusted configuration** (static code, operator-supplied config files with restricted write permissions, etc.). Never accept `urn:secrets-rs:file:...` URNs from untrusted input such as API requests, user-supplied data, or deserialized network payloads. `with_base` anchors relative resolution to a known directory but does **not** prevent path-traversal sequences (`../`) from escaping it; the trusted-configuration requirement still applies.
@@ -70,7 +70,7 @@ registry.register("file", FileSource::with_base("/etc/ssl/private"));
 ```rust
 // EnvSource is already registered. Add FileSource for filesystem secrets.
 let mut registry = SourceRegistry::new();
-registry.register("file", FileSource::with_base("/run/secrets"));
+registry.register("file", FileSource::with_base("/run/secrets")).unwrap();
 // urn:secrets-rs:env:...  → resolved by EnvSource (default)
 // urn:secrets-rs:file:... → resolved by FileSource
 ```

@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-use crate::{EnvSource, error::SourceError};
+use crate::{
+    EnvSource,
+    error::{SourceError, SourceRegisterError},
+    urn::is_valid_source_id,
+};
 
 /// A source from which secret values can be retrieved.
 ///
@@ -29,16 +33,32 @@ impl SourceRegistry {
         let mut registry = Self {
             sources: HashMap::new(),
         };
-        registry.register("env", EnvSource);
+        registry
+            .register("env", EnvSource)
+            .expect("\"env\" is a valid source_id");
         registry
     }
 
     /// Registers a source under the given `id`.
     ///
-    /// The `id` must match the `source_id` component of the secret URN.
+    /// The `id` must match the `source_id` component of the secret URN and
+    /// must consist only of characters valid in a URN NSS: ASCII letters,
+    /// digits, and `-._~!$&'()*+,;=@/`. Returns
+    /// [`SourceRegisterError::InvalidSourceId`] if the id is empty or contains
+    /// invalid characters.
+    ///
     /// If `id` is already registered, the previous source is replaced.
-    pub fn register(&mut self, id: impl Into<String>, source: impl Source + 'static) {
-        self.sources.insert(id.into(), Box::new(source));
+    pub fn register(
+        &mut self,
+        id: impl Into<String>,
+        source: impl Source + 'static,
+    ) -> Result<(), SourceRegisterError> {
+        let id = id.into();
+        if !is_valid_source_id(&id) {
+            return Err(SourceRegisterError::InvalidSourceId(id));
+        }
+        self.sources.insert(id, Box::new(source));
+        Ok(())
     }
 
     /// Returns the source registered under `source_id`, if any.
@@ -93,8 +113,69 @@ mod tests {
         }
 
         let mut registry = SourceRegistry::new();
-        registry.register("env", ConstSource(b"replaced"));
+        registry.register("env", ConstSource(b"replaced")).unwrap();
         let result = registry.get("env").unwrap().get("anything").unwrap();
         assert_eq!(result, b"replaced");
+    }
+
+    #[test]
+    fn register_accepts_valid_ids() {
+        let mut r = SourceRegistry::new();
+        // Letters, digits, and the full set of allowed punctuation.
+        for id in &[
+            "file",
+            "vault-sm",
+            "aws.secrets",
+            "gcp_sm",
+            "my~source",
+            "ns/sub",
+        ] {
+            assert!(
+                r.register(*id, crate::sources::env::EnvSource).is_ok(),
+                "rejected valid id: {id}"
+            );
+        }
+    }
+
+    #[test]
+    fn register_rejects_empty_id() {
+        let mut r = SourceRegistry::new();
+        assert_eq!(
+            r.register("", crate::sources::env::EnvSource).unwrap_err(),
+            SourceRegisterError::InvalidSourceId(String::new()),
+        );
+    }
+
+    #[test]
+    fn register_rejects_id_with_colon() {
+        let mut r = SourceRegistry::new();
+        let err = r
+            .register("bad:id", crate::sources::env::EnvSource)
+            .unwrap_err();
+        assert_eq!(
+            err,
+            SourceRegisterError::InvalidSourceId("bad:id".to_owned())
+        );
+    }
+
+    #[test]
+    fn register_rejects_id_with_space() {
+        let mut r = SourceRegistry::new();
+        let err = r
+            .register("bad id", crate::sources::env::EnvSource)
+            .unwrap_err();
+        assert_eq!(
+            err,
+            SourceRegisterError::InvalidSourceId("bad id".to_owned())
+        );
+    }
+
+    #[test]
+    fn register_rejects_id_with_non_ascii() {
+        let mut r = SourceRegistry::new();
+        let err = r
+            .register("café", crate::sources::env::EnvSource)
+            .unwrap_err();
+        assert_eq!(err, SourceRegisterError::InvalidSourceId("café".to_owned()));
     }
 }

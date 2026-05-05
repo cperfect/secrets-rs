@@ -52,7 +52,9 @@ fn main() {
     println!("  certificate : {}", config.certificate);
 
     let mut registry = SourceRegistry::new();
-    registry.register("file", FileSource::with_base(&fixtures));
+    registry
+        .register("file", FileSource::with_base(&fixtures))
+        .unwrap();
 
     bind_all(&mut config, &registry).expect("failed to load TLS credentials");
 
@@ -76,7 +78,7 @@ fn main() {
     let mut cert_pem: Secret<String> = Secret::new(&abs_urn).unwrap();
 
     let mut registry2 = SourceRegistry::new();
-    registry2.register("file", FileSource::new());
+    registry2.register("file", FileSource::new()).unwrap();
     cert_pem.bind(&registry2).unwrap();
 
     println!(

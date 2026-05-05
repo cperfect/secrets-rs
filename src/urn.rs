@@ -2,6 +2,24 @@ use std::{fmt, str::FromStr};
 
 use crate::error::UrnParseError;
 
+/// Returns `true` if every character in `s` is valid in the `source_id`
+/// position of a `urn:secrets-rs:<source_id>:<name>` URN.
+///
+/// Valid characters are the RFC 8141 NSS pchar set minus `:` (which is our
+/// separator): ASCII letters, digits, and `-._~!$&'()*+,;=@/`.
+pub(crate) fn is_valid_source_id(s: &str) -> bool {
+    !s.is_empty()
+        && s.chars().all(|c| {
+            c.is_ascii_alphanumeric()
+                || matches!(
+                    c,
+                    '-' | '.' | '_' | '~'  // unreserved mark chars
+                    | '!' | '$' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | ';' | '='  // sub-delims
+                    | '@' | '/' // remaining pchar / NSS chars
+                )
+        })
+}
+
 /// A secret URN of the form `urn:secrets-rs:<source_id>:<name>`.
 ///
 /// The scheme (`urn`) and NID (`secrets-rs`) are validated case-insensitively
@@ -40,6 +58,9 @@ impl FromStr for Urn {
         }
         if parts[2].is_empty() {
             return Err(UrnParseError::EmptySourceId);
+        }
+        if !is_valid_source_id(parts[2]) {
+            return Err(UrnParseError::InvalidSourceId(parts[2].to_owned()));
         }
         if parts[3].is_empty() {
             return Err(UrnParseError::EmptyName);
@@ -117,5 +138,26 @@ mod tests {
     fn error_on_empty_name() {
         let err = "urn:secrets-rs:env:".parse::<Urn>().unwrap_err();
         assert_eq!(err, UrnParseError::EmptyName);
+    }
+
+    #[test]
+    fn error_on_source_id_with_space() {
+        let err = "urn:secrets-rs:bad id:KEY".parse::<Urn>().unwrap_err();
+        assert!(matches!(err, UrnParseError::InvalidSourceId(_)));
+    }
+
+    #[test]
+    fn error_on_source_id_with_non_ascii() {
+        let err = "urn:secrets-rs:café:KEY".parse::<Urn>().unwrap_err();
+        assert!(matches!(err, UrnParseError::InvalidSourceId(_)));
+    }
+
+    #[test]
+    fn valid_source_id_with_punctuation() {
+        let urn = "urn:secrets-rs:aws.sm-v2/prod:MY_SECRET"
+            .parse::<Urn>()
+            .unwrap();
+        assert_eq!(urn.source_id, "aws.sm-v2/prod");
+        assert_eq!(urn.name, "MY_SECRET");
     }
 }
